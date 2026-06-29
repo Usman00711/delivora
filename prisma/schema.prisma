@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  AGENCY_OWNER
+  AGENCY_MEMBER
+  CLIENT
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  REVIEW
+  HANDOVER
+  COMPLETED
+  PAUSED
+}
+
+enum MilestoneStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum DeliverableStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+}
+
+enum ScopeChangeStatus {
+  REQUESTED
+  QUOTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum HandoverItemType {
+  REPOSITORY
+  CREDENTIAL
+  DOCUMENT
+  TRAINING
+  ASSET
+  OTHER
+}
+
+enum ActivityType {
+  PROJECT_CREATED
+  MILESTONE_UPDATED
+  DELIVERABLE_UPLOADED
+  APPROVAL_REQUESTED
+  APPROVAL_DECIDED
+  SCOPE_CHANGE_REQUESTED
+  REPORT_PUBLISHED
+  INVOICE_SENT
+  HANDOVER_ITEM_ADDED
+}
+
+model User {
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  passwordHash    String
+  role            Role
+  image           String?
+  agencyId        String?
+  clientCompanyId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  agency          Agency?        @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  clientCompany   ClientCompany? @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  scopeChanges    ScopeChangeRequest[] @relation("ScopeChangeRequester")
+  activityLogs    ActivityLog[]  @relation("ActivityActor")
+}
+
+model Agency {
+  id           String          @id @default(cuid())
+  name         String
+  website      String?
+  contactEmail String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  users        User[]
+  clients      ClientCompany[]
+  projects     Project[]
+  activityLogs ActivityLog[]
+}
+
+model ClientCompany {
+  id           String    @id @default(cuid())
+  name         String
+  contactEmail String
+  agencyId     String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  agency       Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  users        User[]
+  projects     Project[]
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  name            String
+  description     String
+  status          ProjectStatus @default(PLANNING)
+  startDate       DateTime
+  dueDate         DateTime
+  budget          Decimal       @db.Decimal(10, 2)
+  healthScore     Int           @default(100)
+  healthLabel     String        @default("Healthy")
+  agencyId        String
+  clientCompanyId String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  agency          Agency        @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  clientCompany   ClientCompany @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  milestones      Milestone[]
+  deliverables    Deliverable[]
+  approvals       ApprovalRequest[]
+  scopeChanges    ScopeChangeRequest[]
+  weeklyReports   WeeklyReport[]
+  handoverItems   HandoverItem[]
+  invoices        Invoice[]
+  activityLogs    ActivityLog[]
+}
+
+model Milestone {
+  id          String          @id @default(cuid())
+  projectId   String
+  title       String
+  description String
+  dueDate     DateTime
+  completedAt DateTime?
+  status      MilestoneStatus @default(UPCOMING)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliverables Deliverable[]
+}
+
+model Deliverable {
+  id          String            @id @default(cuid())
+  projectId   String
+  milestoneId String?
+  title       String
+  description String
+  fileUrl     String?
+  externalUrl String?
+  status      DeliverableStatus @default(DRAFT)
+  submittedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone   Milestone?        @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  approvals   ApprovalRequest[]
+}
+
+model ApprovalRequest {
+  id            String         @id @default(cuid())
+  projectId     String
+  deliverableId String?
+  title         String
+  notes         String
+  status        ApprovalStatus @default(PENDING)
+  dueDate       DateTime
+  decidedAt     DateTime?
+  decisionNote  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliverable   Deliverable?   @relation(fields: [deliverableId], references: [id], onDelete: SetNull)
+}
+
+model ScopeChangeRequest {
+  id             String            @id @default(cuid())
+  projectId      String
+  title          String
+  description    String
+  estimateAmount Decimal?          @db.Decimal(10, 2)
+  estimateDays   Int?
+  status         ScopeChangeStatus @default(REQUESTED)
+  requestedById  String
+  decidedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedBy    User              @relation("ScopeChangeRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+}
+
+model WeeklyReport {
+  id            String    @id @default(cuid())
+  projectId     String
+  title         String
+  weekStart     DateTime
+  weekEnd       DateTime
+  completedWork String
+  nextSteps     String
+  blockers      String
+  clientActions String
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model HandoverItem {
+  id                String           @id @default(cuid())
+  projectId         String
+  title             String
+  type              HandoverItemType @default(OTHER)
+  description       String
+  url               String?
+  isVisibleToClient Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  projectId     String
+  invoiceNumber String
+  amount        Decimal       @db.Decimal(10, 2)
+  status        InvoiceStatus @default(DRAFT)
+  dueDate       DateTime
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String       @id @default(cuid())
+  agencyId  String
+  projectId String?
+  actorId   String?
+  type      ActivityType
+  title     String
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  agency    Agency       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  project   Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor     User?        @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+}
