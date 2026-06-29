@@ -1,12 +1,23 @@
 import { AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+
+type ErrorAction = {
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  variant?: "default" | "outline" | "secondary" | "ghost" | "destructive";
+};
 
 export function ErrorState({
   title = "Something went wrong",
   description = "Please refresh the page and try again.",
+  actions,
 }: {
   title?: string;
   description?: string;
+  actions?: ErrorAction[];
 }) {
   return (
     <Card>
@@ -16,6 +27,26 @@ export function ErrorState({
         </div>
         <p className="mt-4 font-medium">{title}</p>
         <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
+        {actions && actions.length > 0 && (
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {actions.map((action) =>
+              action.href ? (
+                <Button key={action.label} variant={action.variant ?? "outline"} size="sm" asChild>
+                  <Link href={action.href}>{action.label}</Link>
+                </Button>
+              ) : (
+                <Button
+                  key={action.label}
+                  variant={action.variant ?? "outline"}
+                  size="sm"
+                  onClick={action.onClick}
+                >
+                  {action.label}
+                </Button>
+              )
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

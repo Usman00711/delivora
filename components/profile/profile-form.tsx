@@ -5,10 +5,12 @@ import { useFormState } from "react-dom";
 import { Camera, Upload } from "lucide-react";
 import { updateProfileAction } from "@/lib/actions/profile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { ActionMessage } from "@/components/forms/action-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormSection } from "@/components/forms/form-field";
 import { Input } from "@/components/ui/input";
+import { SubmittingButton } from "@/components/forms/submitting-button";
 
 type ProfileFormProps = {
   user: {
@@ -187,22 +189,23 @@ export function ProfileForm({ user, organizationName }: ProfileFormProps) {
                   placeholder="https://res.cloudinary.com/..."
                 />
               </FormField>
-              {(uploadError || uploadSuccess || state.error || state.success) && (
+              <ActionMessage state={state} />
+              {(uploadError || uploadSuccess) && (
                 <div
                   className={
-                    uploadSuccess || state.success
+                    uploadSuccess
                       ? "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
                       : "rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
                   }
                 >
-                  {uploadError ?? state.error ?? uploadSuccess ?? state.success}
+                  {uploadError ?? uploadSuccess}
                 </div>
               )}
             </FormSection>
-            <Button type="submit">
+            <SubmittingButton type="submit" disabled={isUploading} pendingLabel="Saving profile...">
               <Camera className="size-4" />
               Save profile
-            </Button>
+            </SubmittingButton>
           </form>
         </CardContent>
       </Card>

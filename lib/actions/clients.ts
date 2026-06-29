@@ -59,5 +59,5 @@ export async function createClientAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/clients");
-  redirect("/dashboard/clients");
+  redirect("/dashboard/clients?created=1");
 }

@@ -5,6 +5,9 @@ import { ProjectHeader } from "@/components/projects/project-header";
 import { ProjectSubNav } from "@/components/projects/project-sub-nav";
 import { getAgencyProject } from "@/lib/data";
 import { requireAgencyUser } from "@/lib/permissions";
+import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +24,23 @@ export default async function AgencyApprovalsPage({ params }: { params: { projec
         projectId={project.id}
         deliverables={project.deliverables}
       />
-      <div className="grid gap-4">
-        {project.approvals.map((approval) => (
-          <ApprovalCard key={approval.id} approval={approval} />
-        ))}
-      </div>
+      {project.approvals.length ? (
+        <div className="grid gap-4">
+          {project.approvals.map((approval) => (
+            <ApprovalCard key={approval.id} approval={approval} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="No approvals yet"
+          description="You can create the first approval request for this project."
+          actions={
+            <Button nativeButton={false} render={<Link href={`/dashboard/projects/${project.id}/approvals`} />}>
+              Refresh
+            </Button>
+          }
+        />
+      )}
     </div>
   );
 }

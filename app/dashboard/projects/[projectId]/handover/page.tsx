@@ -3,6 +3,7 @@ import { HandoverVaultList } from "@/components/handover/handover-vault-list";
 import { HandoverItemCreateForm } from "@/components/projects/delivery-forms";
 import { ProjectHeader } from "@/components/projects/project-header";
 import { ProjectSubNav } from "@/components/projects/project-sub-nav";
+import { EmptyState } from "@/components/shared/empty-state";
 import { getAgencyProject } from "@/lib/data";
 import { requireAgencyUser } from "@/lib/permissions";
 
@@ -18,7 +19,14 @@ export default async function AgencyHandoverPage({ params }: { params: { project
       <ProjectHeader project={project} />
       <ProjectSubNav baseHref={`/dashboard/projects/${project.id}`} />
       <HandoverItemCreateForm projectId={project.id} />
-      <HandoverVaultList items={project.handoverItems} />
+      {project.handoverItems.length ? (
+        <HandoverVaultList items={project.handoverItems} />
+      ) : (
+        <EmptyState
+          title="No handover items yet"
+          description="Add handover items so the client can access transition assets and notes."
+        />
+      )}
     </div>
   );
 }

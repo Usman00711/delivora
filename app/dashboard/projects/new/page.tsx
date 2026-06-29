@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ProjectForm } from "@/components/projects/project-form";
-import { SectionHeader } from "@/components/layout/section-header";
 import { prisma } from "@/lib/prisma";
 import { requireAgencyUser } from "@/lib/permissions";
+import { ProjectCreationWizard } from "@/components/projects/project-creation-wizard";
+import { SectionHeader } from "@/components/layout/section-header";
 
 export const metadata: Metadata = {
   title: "New Project",
@@ -21,7 +21,7 @@ export default async function NewProjectPage() {
         title="New Project"
         description="Create a delivery project for an existing client."
       />
-      <ProjectForm clients={clients} />
+      <ProjectCreationWizard clients={clients} />
     </div>
   );
 }

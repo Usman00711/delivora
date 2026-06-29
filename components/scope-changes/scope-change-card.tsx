@@ -1,9 +1,11 @@
 import type { ScopeChangeRequest, User } from "@prisma/client";
+import { useFormState } from "react-dom";
+import { ActionMessage } from "@/components/forms/action-message";
 import { decideScopeChange } from "@/lib/actions/decisions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/data";
+import { SubmittingButton } from "@/components/forms/submitting-button";
 
 type ScopeChangeWithRequester = ScopeChangeRequest & {
   requestedBy: User;
@@ -16,6 +18,8 @@ export function ScopeChangeCard({
   scopeChange: ScopeChangeWithRequester;
   showDecisionForm?: boolean;
 }) {
+  const [state, action] = useFormState(decideScopeChange, {});
+
   return (
     <Card>
       <CardHeader className="pb-0">
@@ -52,22 +56,32 @@ export function ScopeChangeCard({
           </div>
         </div>
         {showDecisionForm && scopeChange.status === "QUOTED" && (
-          <form action={decideScopeChange} className="mt-4 flex flex-wrap gap-2">
+          <form action={action} className="mt-4 flex flex-wrap gap-2">
             <input type="hidden" name="scopeChangeId" value={scopeChange.id} />
-            <Button type="submit" name="status" value="APPROVED" size="sm">
+            <SubmittingButton
+              type="submit"
+              name="status"
+              value="APPROVED"
+              size="sm"
+              pendingLabel="Approving..."
+            >
               Approve quote
-            </Button>
-            <Button
+            </SubmittingButton>
+            <SubmittingButton
               type="submit"
               name="status"
               value="REJECTED"
               variant="outline"
               size="sm"
+              pendingLabel="Declining..."
             >
               Decline
-            </Button>
+            </SubmittingButton>
           </form>
         )}
+        <div className="mt-3">
+          <ActionMessage state={state} />
+        </div>
       </CardContent>
     </Card>
   );

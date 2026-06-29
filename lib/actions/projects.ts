@@ -60,7 +60,7 @@ export async function createProjectAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/projects");
-  redirect(`/dashboard/projects/${project.id}`);
+  redirect(`/dashboard/projects/${project.id}?created=1`);
 }
 
 export async function updateProjectAction(
@@ -113,5 +113,5 @@ export async function updateProjectAction(
   revalidatePath("/dashboard/projects");
   revalidatePath(`/dashboard/projects/${project.id}`);
   revalidatePath(`/client/projects/${project.id}`);
-  redirect(`/dashboard/projects/${project.id}`);
+  redirect(`/dashboard/projects/${project.id}?updated=1`);
 }

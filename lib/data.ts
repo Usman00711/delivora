@@ -28,6 +28,90 @@ export function timeAgo(date: Date) {
   return `${days}d ago`;
 }
 
+export const healthTrendWindowWeeks = 12;
+export const turnaroundWindowDays = 90;
+export const deliveryProgressProjectLimit = 10;
+
+export type AnalyticsHealthTrendPoint = {
+  weekStart: string;
+  label: string;
+  avgHealth: number;
+  projectCount: number;
+};
+
+export type AnalyticsTurnaroundPoint = {
+  weekStart: string;
+  label: string;
+  avgHours: number;
+  sampleSize: number;
+};
+
+export type AnalyticsInvoiceStatusPoint = {
+  status: string;
+  label: string;
+  count: number;
+};
+
+export type AnalyticsDeliveryProgressPoint = {
+  projectId: string;
+  projectName: string;
+  projectStatus: string;
+  progress: number;
+  totalMilestones: number;
+  completedMilestones: number;
+  hasMilestones: boolean;
+};
+
+export type AgencyDashboardAnalytics = {
+  healthTrend: AnalyticsHealthTrendPoint[];
+  approvalTurnaround: AnalyticsTurnaroundPoint[];
+  invoiceStatusBreakdown: AnalyticsInvoiceStatusPoint[];
+  deliveryProgress: AnalyticsDeliveryProgressPoint[];
+};
+
+export type ClientDashboardAnalytics = AgencyDashboardAnalytics;
+
+function startOfWeek(date: Date) {
+  const clone = new Date(date);
+  const day = clone.getDay();
+  const diffToMonday = (day + 6) % 7;
+  clone.setDate(clone.getDate() - diffToMonday);
+  clone.setHours(0, 0, 0, 0);
+  return clone;
+}
+
+function weekLabel(date: Date) {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function buildHealthTrendBuckets(start: Date, weeks: number) {
+  const buckets: {
+    [key: string]: {
+      weekStart: Date;
+      label: string;
+      total: number;
+      count: number;
+    };
+  } = {};
+
+  for (let i = 0; i < weeks; i++) {
+    const week = new Date(start);
+    week.setDate(week.getDate() + i * 7);
+    const key = week.toISOString().slice(0, 10);
+    buckets[key] = {
+      weekStart: week,
+      label: weekLabel(week),
+      total: 0,
+      count: 0,
+    };
+  }
+
+  return buckets;
+}
+
 export async function getAgencyDashboardData(agencyId: string) {
   const [projects, pendingApprovals, scopeChanges, overdueMilestones, pendingInvoices, activity] =
     await Promise.all([
@@ -212,7 +296,7 @@ export async function getClientDashboardData(clientCompanyId: string) {
         type: "Approval",
         title: item.title,
         project: item.project.name,
-        href: `/client/projects/${item.projectId}/approvals`,
+        href: `/client/projects/${item.projectId}/approvals/${item.id}`,
         urgency: item.dueDate < new Date() ? 1 : 2,
       })),
       ...scopeChanges.map((item) => ({
@@ -220,7 +304,7 @@ export async function getClientDashboardData(clientCompanyId: string) {
         type: "Scope",
         title: item.title,
         project: item.project.name,
-        href: `/client/projects/${item.projectId}/scope-changes`,
+        href: `/client/projects/${item.projectId}/scope-changes/${item.id}`,
         urgency: 3,
       })),
       ...invoices.map((item) => ({
@@ -228,7 +312,7 @@ export async function getClientDashboardData(clientCompanyId: string) {
         type: "Invoice",
         title: `${item.invoiceNumber} ${formatCurrency(item.amount)}`,
         project: item.project.name,
-        href: `/client/projects/${item.projectId}/invoices`,
+        href: `/client/projects/${item.projectId}/invoices/${item.id}`,
         urgency: item.status === "OVERDUE" ? 1 : 4,
       })),
       ...reports.map((item) => ({
@@ -236,7 +320,7 @@ export async function getClientDashboardData(clientCompanyId: string) {
         type: "Report",
         title: item.title,
         project: item.project.name,
-        href: `/client/projects/${item.projectId}/reports`,
+        href: `/client/projects/${item.projectId}/reports/${item.id}`,
         urgency: 5,
       })),
       ...handoverItems.map((item) => ({
@@ -244,7 +328,7 @@ export async function getClientDashboardData(clientCompanyId: string) {
         type: "Handover",
         title: item.title,
         project: item.project.name,
-        href: `/client/projects/${item.projectId}/handover`,
+        href: `/client/projects/${item.projectId}/handover/${item.id}`,
         urgency: 6,
       })),
       ...milestones.map((item) => ({
@@ -252,7 +336,7 @@ export async function getClientDashboardData(clientCompanyId: string) {
         type: "Milestone",
         title: item.title,
         project: item.project.name,
-        href: `/client/projects/${item.projectId}`,
+        href: `/client/projects/${item.projectId}/milestones/${item.id}`,
         urgency: item.status === "OVERDUE" ? 1 : 7,
       })),
     ].sort((a, b) => a.urgency - b.urgency),
@@ -280,4 +364,332 @@ export async function getClientProject(clientCompanyId: string, projectId: strin
       activityLogs: { orderBy: { createdAt: "desc" }, take: 10 },
     },
   });
+}
+
+export async function getAgencyDashboardAnalytics(
+  agencyId: string
+): Promise<AgencyDashboardAnalytics> {
+  const now = new Date();
+  const healthWindowStart = startOfWeek(new Date(now));
+  healthWindowStart.setDate(healthWindowStart.getDate() - (healthTrendWindowWeeks - 1) * 7);
+
+  const turnaroundWindowStart = new Date(now);
+  turnaroundWindowStart.setDate(now.getDate() - turnaroundWindowDays);
+
+  const turnaroundWindowWeeks = Math.ceil(turnaroundWindowDays / 7);
+  const turnaroundWindowStartWeek = startOfWeek(turnaroundWindowStart);
+
+  const milestoneProgressWhere = { agencyId };
+
+  const [healthProjects, turnaroundApprovals, invoiceRows, progressProjects] =
+    await Promise.all([
+      prisma.project.findMany({
+        where: {
+          agencyId,
+          updatedAt: { gte: healthWindowStart },
+        },
+        select: {
+          healthScore: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.approvalRequest.findMany({
+        where: {
+          project: { agencyId },
+          decidedAt: { gte: turnaroundWindowStart },
+          status: { in: ["APPROVED", "CHANGES_REQUESTED", "REJECTED"] },
+        },
+        select: {
+          createdAt: true,
+          decidedAt: true,
+        },
+      }),
+      prisma.invoice.groupBy({
+        by: ["status"],
+        where: {
+          project: { agencyId },
+        },
+        _count: { _all: true },
+      }),
+      prisma.project.findMany({
+        where: milestoneProgressWhere,
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          updatedAt: true,
+          milestones: {
+            select: {
+              status: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: deliveryProgressProjectLimit,
+      }),
+    ]);
+
+  const healthBuckets = buildHealthTrendBuckets(
+    healthWindowStart,
+    healthTrendWindowWeeks
+  );
+
+  for (const project of healthProjects) {
+    const bucketDate = startOfWeek(new Date(project.updatedAt));
+    const key = bucketDate.toISOString().slice(0, 10);
+    if (!healthBuckets[key]) continue;
+
+    healthBuckets[key].total += project.healthScore;
+    healthBuckets[key].count += 1;
+  }
+
+  const healthTrend = Object.values(healthBuckets)
+    .map((bucket) => ({
+      weekStart: bucket.weekStart.toISOString(),
+      label: bucket.label,
+      avgHealth:
+        bucket.count > 0
+          ? Math.round((bucket.total / bucket.count) * 10) / 10
+          : 0,
+      projectCount: bucket.count,
+    }))
+    .filter((point) => point.projectCount > 0);
+
+  const turnaroundBuckets = buildHealthTrendBuckets(
+    turnaroundWindowStartWeek,
+    turnaroundWindowWeeks
+  );
+
+  for (const approval of turnaroundApprovals) {
+    if (!approval.decidedAt) continue;
+    const bucketDate = startOfWeek(new Date(approval.decidedAt));
+    const key = bucketDate.toISOString().slice(0, 10);
+    if (!turnaroundBuckets[key]) continue;
+
+    const hours = (new Date(approval.decidedAt).getTime() - approval.createdAt.getTime()) / 3600000;
+    turnaroundBuckets[key].total += hours;
+    turnaroundBuckets[key].count += 1;
+  }
+
+  const approvalTurnaround = Object.values(turnaroundBuckets)
+    .map((bucket) => ({
+      weekStart: bucket.weekStart.toISOString(),
+      label: bucket.label,
+      avgHours:
+        bucket.count > 0 ? Math.round((bucket.total / bucket.count) * 10) / 10 : 0,
+      sampleSize: bucket.count,
+    }))
+    .filter((point) => point.sampleSize > 0);
+
+  const invoiceStatusBreakdown = invoiceRows
+    .filter((row) => row._count._all > 0)
+    .map((row) => ({
+      status: row.status,
+      label: row.status.replace(/_/g, " "),
+      count: row._count._all,
+    }));
+
+  const baselineByStatus = {
+    PLANNING: 12,
+    ACTIVE: 35,
+    REVIEW: 68,
+    HANDOVER: 88,
+    COMPLETED: 100,
+    PAUSED: 55,
+  };
+
+  const deliveryProgress = progressProjects.map((project) => {
+    const milestones = project.milestones;
+    const totalMilestones = milestones.length;
+    const completedMilestones = milestones.filter(
+      (milestone) => milestone.status === "COMPLETED"
+    ).length;
+
+    const hasMilestones = totalMilestones > 0;
+    const progress = hasMilestones
+      ? Math.round((completedMilestones / totalMilestones) * 100)
+      : baselineByStatus[project.status as keyof typeof baselineByStatus] ??
+        10;
+
+    return {
+      projectId: project.id,
+      projectName: project.name,
+      projectStatus: project.status,
+      progress,
+      totalMilestones,
+      completedMilestones,
+      hasMilestones,
+    };
+  });
+
+  return {
+    healthTrend,
+    approvalTurnaround,
+    invoiceStatusBreakdown,
+    deliveryProgress,
+  };
+}
+
+export async function getClientDashboardAnalytics(
+  clientCompanyId: string
+): Promise<ClientDashboardAnalytics> {
+  const now = new Date();
+  const healthWindowStart = startOfWeek(new Date(now));
+  healthWindowStart.setDate(healthWindowStart.getDate() - (healthTrendWindowWeeks - 1) * 7);
+
+  const turnaroundWindowStart = new Date(now);
+  turnaroundWindowStart.setDate(now.getDate() - turnaroundWindowDays);
+
+  const turnaroundWindowWeeks = Math.ceil(turnaroundWindowDays / 7);
+  const turnaroundWindowStartWeek = startOfWeek(turnaroundWindowStart);
+
+  const milestoneProgressWhere = { clientCompanyId };
+
+  const [healthProjects, turnaroundApprovals, invoiceRows, progressProjects] =
+    await Promise.all([
+      prisma.project.findMany({
+        where: {
+          clientCompanyId,
+          updatedAt: { gte: healthWindowStart },
+        },
+        select: {
+          healthScore: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.approvalRequest.findMany({
+        where: {
+          project: { clientCompanyId },
+          decidedAt: { gte: turnaroundWindowStart },
+          status: { in: ["APPROVED", "CHANGES_REQUESTED", "REJECTED"] },
+        },
+        select: {
+          createdAt: true,
+          decidedAt: true,
+        },
+      }),
+      prisma.invoice.groupBy({
+        by: ["status"],
+        where: {
+          project: { clientCompanyId },
+        },
+        _count: { _all: true },
+      }),
+      prisma.project.findMany({
+        where: milestoneProgressWhere,
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          updatedAt: true,
+          milestones: {
+            select: {
+              status: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: deliveryProgressProjectLimit,
+      }),
+    ]);
+
+  const healthBuckets = buildHealthTrendBuckets(
+    healthWindowStart,
+    healthTrendWindowWeeks
+  );
+
+  for (const project of healthProjects) {
+    const bucketDate = startOfWeek(new Date(project.updatedAt));
+    const key = bucketDate.toISOString().slice(0, 10);
+    if (!healthBuckets[key]) continue;
+
+    healthBuckets[key].total += project.healthScore;
+    healthBuckets[key].count += 1;
+  }
+
+  const healthTrend = Object.values(healthBuckets)
+    .map((bucket) => ({
+      weekStart: bucket.weekStart.toISOString(),
+      label: bucket.label,
+      avgHealth:
+        bucket.count > 0
+          ? Math.round((bucket.total / bucket.count) * 10) / 10
+          : 0,
+      projectCount: bucket.count,
+    }))
+    .filter((point) => point.projectCount > 0);
+
+  const turnaroundBuckets = buildHealthTrendBuckets(
+    turnaroundWindowStartWeek,
+    turnaroundWindowWeeks
+  );
+
+  for (const approval of turnaroundApprovals) {
+    if (!approval.decidedAt) continue;
+    const bucketDate = startOfWeek(new Date(approval.decidedAt));
+    const key = bucketDate.toISOString().slice(0, 10);
+    if (!turnaroundBuckets[key]) continue;
+
+    const hours = (new Date(approval.decidedAt).getTime() - approval.createdAt.getTime()) / 3600000;
+    turnaroundBuckets[key].total += hours;
+    turnaroundBuckets[key].count += 1;
+  }
+
+  const approvalTurnaround = Object.values(turnaroundBuckets)
+    .map((bucket) => ({
+      weekStart: bucket.weekStart.toISOString(),
+      label: bucket.label,
+      avgHours:
+        bucket.count > 0 ? Math.round((bucket.total / bucket.count) * 10) / 10 : 0,
+      sampleSize: bucket.count,
+    }))
+    .filter((point) => point.sampleSize > 0);
+
+  const invoiceStatusBreakdown = invoiceRows
+    .filter((row) => row._count._all > 0)
+    .map((row) => ({
+      status: row.status,
+      label: row.status.replace(/_/g, " "),
+      count: row._count._all,
+    }));
+
+  const baselineByStatus = {
+    PLANNING: 12,
+    ACTIVE: 35,
+    REVIEW: 68,
+    HANDOVER: 88,
+    COMPLETED: 100,
+    PAUSED: 55,
+  };
+
+  const deliveryProgress = progressProjects.map((project) => {
+    const milestones = project.milestones;
+    const totalMilestones = milestones.length;
+    const completedMilestones = milestones.filter(
+      (milestone) => milestone.status === "COMPLETED"
+    ).length;
+
+    const hasMilestones = totalMilestones > 0;
+    const progress = hasMilestones
+      ? Math.round((completedMilestones / totalMilestones) * 100)
+      : baselineByStatus[project.status as keyof typeof baselineByStatus] ??
+        10;
+
+    return {
+      projectId: project.id,
+      projectName: project.name,
+      projectStatus: project.status,
+      progress,
+      totalMilestones,
+      completedMilestones,
+      hasMilestones,
+    };
+  });
+
+  return {
+    healthTrend,
+    approvalTurnaround,
+    invoiceStatusBreakdown,
+    deliveryProgress,
+  };
 }

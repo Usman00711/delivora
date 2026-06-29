@@ -1,10 +1,14 @@
+import { useFormState } from "react-dom";
+import { ActionMessage } from "@/components/forms/action-message";
 import { decideApproval } from "@/lib/actions/decisions";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SubmittingButton } from "@/components/forms/submitting-button";
 
 export function ApprovalDecisionForm({ approvalId }: { approvalId: string }) {
+  const [state, action] = useFormState(decideApproval, {});
+
   return (
-    <form action={decideApproval} className="space-y-3 rounded-md border bg-muted/30 p-3">
+    <form action={action} className="space-y-3 rounded-md border bg-muted/30 p-3">
       <input type="hidden" name="approvalId" value={approvalId} />
       <Input
         name="decisionNote"
@@ -12,28 +16,37 @@ export function ApprovalDecisionForm({ approvalId }: { approvalId: string }) {
         aria-label="Decision note"
       />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" name="status" value="APPROVED" size="sm">
+        <SubmittingButton
+          type="submit"
+          name="status"
+          value="APPROVED"
+          size="sm"
+          pendingLabel="Approving..."
+        >
           Approve
-        </Button>
-        <Button
+        </SubmittingButton>
+        <SubmittingButton
           type="submit"
           name="status"
           value="CHANGES_REQUESTED"
           variant="outline"
           size="sm"
+          pendingLabel="Requesting changes..."
         >
           Request changes
-        </Button>
-        <Button
+        </SubmittingButton>
+        <SubmittingButton
           type="submit"
           name="status"
           value="REJECTED"
           variant="destructive"
           size="sm"
+          pendingLabel="Rejecting..."
         >
           Reject
-        </Button>
+        </SubmittingButton>
       </div>
+      <ActionMessage state={state} />
     </form>
   );
 }

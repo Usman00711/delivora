@@ -1,17 +1,27 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import type { ActionState } from "@/lib/actions/action-utils";
+import { useToast } from "@/components/ui/toaster";
+import { FormResultBanner } from "@/components/forms/form-result-banner";
 
 export function ActionMessage({ state }: { state: ActionState }) {
+  const { showToast } = useToast();
+  const latestRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (state.error && latestRef.current !== `error:${state.error}`) {
+      latestRef.current = `error:${state.error}`;
+      showToast({ message: state.error, kind: "error" });
+    }
+
+    if (state.success && latestRef.current !== `success:${state.success}`) {
+      latestRef.current = `success:${state.success}`;
+      showToast({ message: state.success, kind: "success" });
+    }
+  }, [state.error, state.success, showToast]);
+
   if (!state.error && !state.success) return null;
 
-  return (
-    <div
-      className={
-        state.success
-          ? "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
-          : "rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-      }
-    >
-      {state.error ?? state.success}
-    </div>
-  );
+  return <FormResultBanner state={state} />;
 }

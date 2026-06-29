@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useFormState } from "react-dom";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { registerAction } from "@/lib/actions/auth";
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { FormField, FormSection } from "@/components/forms/form-field";
 import { Separator } from "@/components/ui/separator";
+import { SubmittingButton } from "@/components/forms/submitting-button";
 
 interface AuthFormProps {
   mode: "login" | "register";
@@ -28,7 +29,9 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerState, registerFormAction] = useFormState(registerAction, {});
   const router = useRouter();
+  const [isSigningIn, startSignInTransition] = useTransition();
   const isLogin = mode === "login";
+  const isPending = isLogin && isSigningIn;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,22 +39,24 @@ export function AuthForm({ mode }: AuthFormProps) {
     setLoginError(null);
 
     const formData = new FormData(e.currentTarget);
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-      callbackUrl: "/dashboard",
+    startSignInTransition(async () => {
+      const result = await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
+
+      setIsLoading(false);
+
+      if (result?.error) {
+        setLoginError("Invalid email or password.");
+        return;
+      }
+
+      router.push(result?.url ?? "/dashboard");
+      router.refresh();
     });
-
-    setIsLoading(false);
-
-    if (result?.error) {
-      setLoginError("Invalid email or password.");
-      return;
-    }
-
-    router.push(result?.url ?? "/dashboard");
-    router.refresh();
   }
 
   return (
@@ -134,13 +139,19 @@ export function AuthForm({ mode }: AuthFormProps) {
             )}
           </FormSection>
 
-          <Button
-            type="submit"
-            className="h-10 w-full text-sm font-medium"
-            disabled={isLoading}
-          >
-            {isLoading ? "Please wait..." : isLogin ? "Sign in" : "Create account"}
-          </Button>
+          {isLogin ? (
+            <Button
+              type="submit"
+              className="h-10 w-full text-sm font-medium"
+              disabled={isPending || isLoading}
+            >
+              {isPending ? "Signing in..." : "Sign in"}
+            </Button>
+          ) : (
+            <SubmittingButton type="submit" pendingLabel="Creating account...">
+              Create account
+            </SubmittingButton>
+          )}
 
           <p className="text-center text-sm text-muted-foreground">
             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}

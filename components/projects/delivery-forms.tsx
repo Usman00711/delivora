@@ -24,7 +24,7 @@ import {
 import { ActionMessage } from "@/components/forms/action-message";
 import { CloudinaryUploadField } from "@/components/forms/cloudinary-upload-field";
 import { FormField, FormSection } from "@/components/forms/form-field";
-import { Button } from "@/components/ui/button";
+import { SubmittingButton } from "@/components/forms/submitting-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -60,7 +60,9 @@ export function MilestoneCreateForm({ projectId }: { projectId: string }) {
             </FormField>
           </div>
           <ActionMessage state={state} />
-          <Button type="submit">Add milestone</Button>
+          <SubmittingButton type="submit" pendingLabel="Adding milestone...">
+            Add milestone
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>
@@ -77,9 +79,9 @@ export function MilestoneStatusForm({ milestone }: { milestone: Milestone }) {
         <option value="COMPLETED">Completed</option>
         <option value="OVERDUE">Overdue</option>
       </Select>
-      <Button size="sm" variant="outline" type="submit">
+      <SubmittingButton size="sm" variant="outline" type="submit" pendingLabel="Updating status...">
         Update
-      </Button>
+      </SubmittingButton>
     </form>
   );
 }
@@ -134,7 +136,9 @@ export function DeliverableCreateForm({
             </FormField>
           </FormSection>
           <ActionMessage state={state} />
-          <Button type="submit">Add deliverable</Button>
+          <SubmittingButton type="submit" pendingLabel="Adding deliverable...">
+            Add deliverable
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>
@@ -178,7 +182,9 @@ export function ApprovalRequestCreateForm({
             <Input id="approvalDueDate" name="dueDate" type="date" required />
           </FormField>
           <ActionMessage state={state} />
-          <Button type="submit">Request approval</Button>
+          <SubmittingButton type="submit" pendingLabel="Creating request...">
+            Request approval
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>
@@ -224,7 +230,9 @@ export function WeeklyReportCreateForm({ projectId }: { projectId: string }) {
             Publish to client portal
           </label>
           <ActionMessage state={state} />
-          <Button type="submit">Create report</Button>
+          <SubmittingButton type="submit" pendingLabel="Publishing report...">
+            Create report
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>
@@ -260,9 +268,9 @@ export function ScopeQuoteForm({
         defaultValue={scopeChange.estimateDays ?? undefined}
         required
       />
-      <Button type="submit" size="sm">
+      <SubmittingButton type="submit" size="sm" pendingLabel="Saving quote...">
         Quote
-      </Button>
+      </SubmittingButton>
       <div className="sm:col-span-3">
         <ActionMessage state={state} />
       </div>
@@ -303,7 +311,9 @@ export function InvoiceCreateForm({ projectId }: { projectId: string }) {
             </FormField>
           </div>
           <ActionMessage state={state} />
-          <Button type="submit">Create invoice</Button>
+          <SubmittingButton type="submit" pendingLabel="Saving invoice...">
+            Create invoice
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>
@@ -321,9 +331,9 @@ export function InvoiceStatusForm({ invoice }: { invoice: Invoice }) {
         <option value="OVERDUE">Overdue</option>
         <option value="VOID">Void</option>
       </Select>
-      <Button size="sm" variant="outline" type="submit">
+      <SubmittingButton size="sm" variant="outline" type="submit" pendingLabel="Updating status...">
         Update
-      </Button>
+      </SubmittingButton>
     </form>
   );
 }
@@ -383,7 +393,9 @@ export function HandoverItemCreateForm({ projectId }: { projectId: string }) {
             Visible to client
           </label>
           <ActionMessage state={state} />
-          <Button type="submit">Add handover item</Button>
+          <SubmittingButton type="submit" pendingLabel="Adding handover item...">
+            Add handover item
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>

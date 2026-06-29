@@ -7,13 +7,16 @@ import { ProjectHealthPanel } from "@/components/projects/project-health-panel";
 import { ProjectSubNav } from "@/components/projects/project-sub-nav";
 import { getAgencyProject } from "@/lib/data";
 import { requireAgencyUser } from "@/lib/permissions";
+import { RouteToasts } from "@/components/shared/route-toasts";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgencyProjectPage({
   params,
+  searchParams,
 }: {
   params: { projectId: string };
+  searchParams?: { created?: string; updated?: string };
 }) {
   const user = await requireAgencyUser();
   const project = await getAgencyProject(user.agencyId, params.projectId);
@@ -22,6 +25,12 @@ export default async function AgencyProjectPage({
 
   return (
     <div className="space-y-6">
+      <RouteToasts
+        toasts={[
+          searchParams?.created ? { message: "Project created successfully." } : null,
+          searchParams?.updated ? { message: "Project updated successfully." } : null,
+        ].filter(Boolean) as { message: string }[]}
+      />
       <ProjectHeader project={project} />
       <div className="flex justify-end">
         <Button

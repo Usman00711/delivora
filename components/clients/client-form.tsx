@@ -4,9 +4,9 @@ import { useFormState } from "react-dom";
 import { createClientAction } from "@/lib/actions/clients";
 import { ActionMessage } from "@/components/forms/action-message";
 import { FormField, FormSection } from "@/components/forms/form-field";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SubmittingButton } from "@/components/forms/submitting-button";
 
 export function ClientForm() {
   const [state, formAction] = useFormState(createClientAction, {});
@@ -57,7 +57,9 @@ export function ClientForm() {
           </FormSection>
 
           <ActionMessage state={state} />
-          <Button type="submit">Create client</Button>
+          <SubmittingButton type="submit" pendingLabel="Creating client...">
+            Create client
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>

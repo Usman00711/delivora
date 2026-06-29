@@ -3,8 +3,11 @@ import { ProjectHeader } from "@/components/projects/project-header";
 import { ProjectSubNav } from "@/components/projects/project-sub-nav";
 import { ScopeChangeCard } from "@/components/scope-changes/scope-change-card";
 import { ScopeQuoteForm } from "@/components/projects/delivery-forms";
+import { EmptyState } from "@/components/shared/empty-state";
 import { getAgencyProject } from "@/lib/data";
 import { requireAgencyUser } from "@/lib/permissions";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -17,14 +20,30 @@ export default async function AgencyScopeChangesPage({ params }: { params: { pro
     <div className="space-y-6">
       <ProjectHeader project={project} />
       <ProjectSubNav baseHref={`/dashboard/projects/${project.id}`} />
-      <div className="grid gap-4">
-        {project.scopeChanges.map((scopeChange) => (
-          <div key={scopeChange.id}>
-            <ScopeChangeCard scopeChange={scopeChange} />
-            <ScopeQuoteForm scopeChange={scopeChange} />
-          </div>
-        ))}
-      </div>
+      {project.scopeChanges.length ? (
+        <div className="grid gap-4">
+          {project.scopeChanges.map((scopeChange) => (
+            <div key={scopeChange.id}>
+              <ScopeChangeCard scopeChange={scopeChange} />
+              <ScopeQuoteForm scopeChange={scopeChange} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="No scope changes yet"
+          description="Create scope change requests when project requirements evolve."
+          actions={
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={`/dashboard/projects/${project.id}/scope-changes`} />}
+            >
+              Refresh
+            </Button>
+          }
+        />
+      )}
     </div>
   );
 }

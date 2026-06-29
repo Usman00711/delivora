@@ -5,7 +5,7 @@ import type { ClientCompany, Project } from "@prisma/client";
 import { createProjectAction, updateProjectAction } from "@/lib/actions/projects";
 import { ActionMessage } from "@/components/forms/action-message";
 import { FormField, FormSection } from "@/components/forms/form-field";
-import { Button } from "@/components/ui/button";
+import { SubmittingButton } from "@/components/forms/submitting-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -110,7 +110,9 @@ export function ProjectForm({ clients, project }: ProjectFormProps) {
           </div>
 
           <ActionMessage state={state} />
-          <Button type="submit">{project ? "Save project" : "Create project"}</Button>
+          <SubmittingButton type="submit" pendingLabel="Saving project...">
+            {project ? "Save project" : "Create project"}
+          </SubmittingButton>
         </form>
       </CardContent>
     </Card>

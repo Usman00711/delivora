@@ -5,15 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getClients } from "@/lib/data";
 import { requireAgencyUser } from "@/lib/permissions";
+import { RouteToasts } from "@/components/shared/route-toasts";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientsPage() {
+export default async function ClientsPage({
+  searchParams,
+}: {
+  searchParams?: { created?: string };
+}) {
   const user = await requireAgencyUser();
   const clients = await getClients(user.agencyId);
 
   return (
     <div className="space-y-6">
+      <RouteToasts
+        toasts={searchParams?.created ? [{ message: "Client created." }] : []}
+      />
       <SectionHeader
         title="Clients"
         description="Manage client companies and portal users."

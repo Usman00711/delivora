@@ -36,7 +36,7 @@ export function DashboardShell({
           sidebarSubtitle={agencyName}
           user={user}
         />
-        <main className="flex-1 overflow-auto bg-muted/20">
+        <main className="relative flex-1 overflow-auto bg-[color:var(--dashboard-surface)] before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_85%_10%,rgba(255,255,255,0.08),transparent_60%)]">
           <PageContainer>{children}</PageContainer>
         </main>
       </div>
