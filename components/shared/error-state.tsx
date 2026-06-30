@@ -31,9 +31,13 @@ export function ErrorState({
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {actions.map((action) =>
               action.href ? (
-                <Button key={action.label} variant={action.variant ?? "outline"} size="sm" asChild>
-                  <Link href={action.href}>{action.label}</Link>
-                </Button>
+                <Button
+                  key={action.label}
+                  variant={action.variant ?? "outline"}
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href={action.href}>{action.label}</Link>}
+                />
               ) : (
                 <Button
                   key={action.label}

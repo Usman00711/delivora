@@ -74,7 +74,7 @@ export function ApprovalTurnaroundChart({
             <LabelList
               dataKey="avgHours"
               position="top"
-              formatter={(value: number) => `${value}h`}
+              formatter={(value) => `${Number(value).toFixed(1)}h`}
             />
           </Line>
         </LineChart>

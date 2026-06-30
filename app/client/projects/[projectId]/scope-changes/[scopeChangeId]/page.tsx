@@ -23,7 +23,7 @@ export default async function ClientScopeChangeDetailPage({
     },
     include: {
       project: { select: { id: true, name: true } },
-      requestedBy: { select: { name: true } },
+      requestedBy: true,
     },
   });
 
@@ -73,4 +73,3 @@ export default async function ClientScopeChangeDetailPage({
     </div>
   );
 }
-

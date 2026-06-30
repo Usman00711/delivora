@@ -76,7 +76,7 @@ export function DeliveryProgressChart({
           />
           <Tooltip content={<DeliveryProgressTooltip />} />
           <Bar dataKey="progress" fill={color} radius={[0, 6, 6, 0]}>
-            <LabelList dataKey="progress" position="right" formatter={(value: number) => `${value}%`} />
+            <LabelList dataKey="progress" position="right" formatter={(value) => `${Number(value)}%`} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

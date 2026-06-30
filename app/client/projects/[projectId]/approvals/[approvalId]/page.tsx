@@ -25,7 +25,7 @@ export default async function ClientApprovalDetailPage({
     },
     include: {
       project: { select: { id: true, name: true } },
-      deliverable: { select: { id: true, title: true } },
+      deliverable: true,
     },
   });
 
@@ -102,4 +102,3 @@ export default async function ClientApprovalDetailPage({
     </div>
   );
 }
-

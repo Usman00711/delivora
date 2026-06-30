@@ -352,15 +352,19 @@ export function ProjectCreationWizard({ clients }: ProjectCreationWizardProps) {
               <Button disabled={!canContinueToStep3} onClick={() => changeStep(3)}>
                 Review
               </Button>
-              <Button asChild variant="outline">
-                <Link href="/dashboard/projects/new">Cancel</Link>
-              </Button>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/dashboard/projects/new">Cancel</Link>}
+              />
             </>
           )}
           {step === 3 && (
-            <Button asChild variant="outline">
-              <Link href="/dashboard/projects">Open project list</Link>
-            </Button>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/dashboard/projects">Open project list</Link>}
+            />
           )}
         </div>
       </div>
