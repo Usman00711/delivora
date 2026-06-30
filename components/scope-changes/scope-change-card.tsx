@@ -1,3 +1,5 @@
+"use client";
+
 import type { ScopeChangeRequest, User } from "@prisma/client";
 import { useFormState } from "react-dom";
 import { ActionMessage } from "@/components/forms/action-message";
